@@ -7,22 +7,30 @@ public class messaging : MonoBehaviour
 {
     public static messaging instance = null;
 
-    public string message = "Hello world. If this works we just tweeted from our #GGJ18 game! #GameDev #IndieDev #WhatHaveWeDone #OhGodWhy";
-
     private bool caps_on = false;
 
+    public bool will_send_tweet = true;
+    public float max_character = 30;
+
     public string debug;
+
+    private TextMesh text_mesh;
+    public string extra;
 
     // private TwitterApi twitter_api;
 
     void Start()
     {
+        Screen.SetResolution(1024, 768, false);
         if (messaging.instance != null)
         {
             DestroyImmediate(this.gameObject);
         }
 
         messaging.instance = this;
+
+        this.text_mesh = this.GetComponent<TextMesh>();
+        this.text_mesh.fontSize = 14;
     }
 
     public void send_tweet()
@@ -33,39 +41,49 @@ public class messaging : MonoBehaviour
         Twity.Oauth.accessTokenSecret = "q2tQuMPVB5dorcHJebf4JbJ5Xep1kYcCmUpKrZh73qE5P";
 
         Dictionary<string, string> parameters = new Dictionary<string, string>();
-        parameters["status"] = this.message;
+        parameters["status"] = this.text_mesh.text + this.extra;
 
-        StartCoroutine (Twity.Client.Post ("statuses/update", parameters, Callback));
-    }
-
-    void Callback(bool success, string response) {
-        if (success) {
-            Tweet tweet = JsonUtility.FromJson<Tweet> (response);
-        } else {
-            Debug.Log (response);
+        if (this.will_send_tweet) {
+            StartCoroutine (Twity.Client.Post ("statuses/update", parameters, Callback));
         }
+        this.text_mesh.text= "";
     }
+
+    void Callback(bool success, string response) {}
 
     public void handle_key_press(string key)
     {
-        if (key.Length == 1)
+        if (key.Length == 1 && this.text_mesh.text.Length < this.max_character)
         {
-            this.message += this.caps_on ? key.ToUpper() : key;
+            this.text_mesh.text += this.caps_on ? key.ToUpper() : key;
         }
 
-        if (key == "delete")
+        if (key == "del")
         {
-            this.message = this.message.Substring(0, this.message.Length - 1);
+            this.text_mesh.text = this.text_mesh.text.Substring(0, this.text_mesh.text.Length - 1);
         }
 
-        if (key == "space")
+        if (key == "" && this.text_mesh.text.Length < this.max_character)
         {
-            this.message += " ";
+            this.text_mesh.text += " ";
         }
 
-        if (key == "caps lock")
+        if (key == "caps")
         {
             this.caps_on = !this.caps_on;
         }
+
+        if (key == "enter")
+        {
+            this.send_tweet();
+        }
+
+        if (key == "power lol")
+        {
+            Debug.Log("Lol");
+            Application.Quit();
+        }
+
+        this.text_mesh.text = this.text_mesh.text;
     }
 }

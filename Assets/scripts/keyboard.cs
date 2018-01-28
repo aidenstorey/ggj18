@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using System.Linq;
 
 public class keyboard : MonoBehaviour
 {
@@ -20,6 +21,8 @@ public class keyboard : MonoBehaviour
     public Vector2 top_left;
     public Vector2 bottom_right;
 
+    public Sprite[] sprites;
+
     void Start()
     {
         if (keyboard.instance != null)
@@ -34,6 +37,8 @@ public class keyboard : MonoBehaviour
 
     public void create_keyboard()
     {
+        return; // Don't let the keyboard get fucked up.
+
         foreach (var k in this.GetComponentsInChildren<key>())
         {
             DestroyImmediate(k.gameObject);
@@ -58,6 +63,8 @@ public class keyboard : MonoBehaviour
 
             y_offset -= row_y_size / 2.0f;
 
+            float[] order = {1.0f, 1.25f, 1.5f, 1.75f, 2.25f, 5.0f};
+
             x_offset = x_start;
             for (int k = 0; k < keys.Length; k++)
             {
@@ -73,9 +80,23 @@ public class keyboard : MonoBehaviour
 
                 var go = Instantiate(this.key_prefab, Vector3.zero, Quaternion.identity);
 
+                var sr = go.GetComponent<SpriteRenderer>();
+                sr.sprite = this.sprites[order.ToList().IndexOf(units)];
+
                 go.transform.SetParent(this.transform);
                 go.transform.localPosition = new Vector3(x_offset, y_offset, 0.0f);
-                go.transform.localScale = new Vector3(50 * units + this.spacing * Mathf.Ceil(units), 50 * 1.0f, 1.0f);
+
+                var text = go.GetComponentInChildren<TextMesh>();
+                text.text = name;
+                text.fontSize = 70;
+
+                if (name.Length > 1)
+                {
+                    text.characterSize /= 2.0f;
+                }
+
+                var renderer = go.GetComponentInChildren<MeshRenderer>();
+                renderer.sortingOrder = 1000;
 
                 go.name = name;
 

@@ -24,9 +24,17 @@ public class shadow_track : MonoBehaviour
     float attacking = 0.0f;
     float attacking_cooldown = 0.0f;
 
+    public float scale_speed = 50.0f;
+    public Vector3 scale_normal = new Vector3(1.0f, 1.0f, 1.0f);
+    public Vector3 scale_down = new Vector3(0.8f, 0.8f, 1.0f);
+
+    Vector3 scale_target;
+
+
     void Start()
     {
         this.position_initial = this.transform.position;
+        this.scale_target = scale_normal;
     }
 
     void Update()
@@ -39,16 +47,22 @@ public class shadow_track : MonoBehaviour
 
         if (this.attacking == 0.0f)
         {
-            if (tl.x <= fp.x && fp.x <= br.x && tl.y >= fp.y && fp.y >= br.y)
+            var mouseX = Input.mousePosition.x;
+            var mouseY = Input.mousePosition.y;
+
+            if (mouseX > 0 && mouseX < Screen.width && mouseY > 0 && mouseY < Screen.height && !fly.instance.spawning)
             {
                 this.transform.position = Vector3.MoveTowards(this.transform.position, fp, (fly.instance.is_taunting ? this.speed_taunted : this.speed_track) * Time.deltaTime);
 
-                if (this.attacking_cooldown == 0.0f && (fp - this.transform.position).magnitude <= this.attacking_distance)
+                if  (mouseY < Screen.height / 2.8f)
                 {
-                    this.attacking = this.attacking_time;
-                    this.attacking_cooldown = this.attacking_cooldown_time;
+                    if (this.attacking_cooldown == 0.0f && (fp - this.transform.position).magnitude <= this.attacking_distance)
+                    {
+                        this.attacking = this.attacking_time;
+                        this.attacking_cooldown = this.attacking_cooldown_time;
 
-                    this.attacking_radius = Random.Range(this.attacking_radius_min, this.attacking_radius_max);
+                        this.attacking_radius = Random.Range(this.attacking_radius_min, this.attacking_radius_max);
+                    }
                 }
             }
             else
@@ -64,31 +78,44 @@ public class shadow_track : MonoBehaviour
 
             if (previous_time != this.attacking && previous_time > this.escape_time && this.attacking < this.escape_time)
             {
+                this.scale_target = this.scale_down;
+
                 var overlapping = Physics.OverlapSphere(this.transform.position, this.attacking_radius);
                 foreach (var key in overlapping)
                 {
-                    key.GetComponent<key>().set_down(true);
+                    if (key.name == "fly")
+                    {
+                        fly.instance.kill();
+                    }
+                    else
+                    {
+                        key.GetComponent<key>().set_down(true);
+                    }
                 }
             }
 
             if (this.attacking == 0.0f)
             {
+                this.scale_target = this.scale_normal;
+
                 var overlapping = Physics.OverlapSphere(this.transform.position, this.attacking_radius);
                 foreach (var key in overlapping)
                 {
-                    key.GetComponent<key>().set_down(false);
+                    if (key.name != "fly")
+                    {
+                        key.GetComponent<key>().set_down(false);
+                    }
                 }
             }
         }
 
+        var speed = this.scale_target == this.scale_normal ? this.scale_speed / 5.0f : this.scale_speed;
+
+        this.transform.localScale = Vector3.MoveTowards(this.transform.localScale, this.scale_target, speed * Time.deltaTime);
+
         if (this.attacking_cooldown != 0.0f)
         {
             this.attacking_cooldown = Mathf.Max(0.0f, this.attacking_cooldown - Time.deltaTime);
-
-            if (this.attacking == 0.0f)
-            {
-                // Post cooldown stuff
-            }
         }
     }
 
